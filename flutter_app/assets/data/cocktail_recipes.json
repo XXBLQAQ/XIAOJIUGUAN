@@ -1,0 +1,10 @@
+[
+  {"id":"old-fashioned","name":"古典鸡尾酒 Old Fashioned","keywords":["威士忌","经典","浓郁"],"ingredients":["波本威士忌 60 ml","糖浆 7.5 ml","苦精 2 滴"],"steps":["杯中加入冰块和所有材料","搅拌约 20 秒至冰镇","补满大冰块"],"glass":"古典杯","garnish":"橙皮","taste":"浓郁","abv":32},
+  {"id":"martini","name":"马天尼 Martini","keywords":["金酒","经典","干爽"],"ingredients":["伦敦干金酒 60 ml","干味美思 10 ml","橄榄汁少许"],"steps":["将材料加入调酒杯","加冰搅拌至充分冰镇","滤入冰镇马天尼杯"],"glass":"马天尼杯","garnish":"橄榄或柠檬皮","taste":"干爽","abv":30},
+  {"id":"mojito","name":"莫希托 Mojito","keywords":["朗姆","薄荷","清爽"],"ingredients":["白朗姆 50 ml","青柠汁 25 ml","糖浆 15 ml","苏打水 适量","薄荷叶 8 片"],"steps":["杯中轻压薄荷、青柠汁和糖浆","加入碎冰与朗姆","补苏打水并轻搅"],"glass":"海波杯","garnish":"薄荷枝与青柠","taste":"清爽","abv":12},
+  {"id":"margarita","name":"玛格丽特 Margarita","keywords":["龙舌兰","酸甜","派对"],"ingredients":["龙舌兰 50 ml","君度 25 ml","青柠汁 25 ml"],"steps":["杯口沾盐","摇壶加冰摇匀","滤入冰镇玛格丽特杯"],"glass":"玛格丽特杯","garnish":"青柠角","taste":"酸甜","abv":25},
+  {"id":"negroni","name":"内格罗尼 Negroni","keywords":["金酒","苦味","经典"],"ingredients":["金酒 30 ml","金巴利 30 ml","甜味美思 30 ml"],"steps":["所有材料加入装满冰的古典杯","搅拌至冰镇","保留大冰块饮用"],"glass":"古典杯","garnish":"橙片","taste":"苦甜","abv":24},
+  {"id":"whiskey-sour","name":"威士忌酸 Whiskey Sour","keywords":["威士忌","酸甜","蛋白"],"ingredients":["波本威士忌 60 ml","柠檬汁 30 ml","糖浆 20 ml","蛋清 15 ml（可选）"],"steps":["先干摇所有材料","加冰再次摇匀","双重过滤入冰镇杯"],"glass":"岩石杯","garnish":"柠檬片与樱桃","taste":"酸甜","abv":20},
+  {"id":"singapore-sling","name":"新加坡司令 Singapore Sling","keywords":["金酒","果香","热带"],"ingredients":["金酒 30 ml","樱桃白兰地 15 ml","菠萝汁 75 ml","青柠汁 15 ml","苏打水 适量"],"steps":["除苏打外摇匀材料","滤入装冰海波杯","补苏打水"],"glass":"海波杯","garnish":"菠萝与樱桃","taste":"果香","abv":10},
+  {"id":"bloody-mary","name":"血腥玛丽 Bloody Mary","keywords":["伏特加","番茄","咸鲜"],"ingredients":["伏特加 45 ml","番茄汁 90 ml","柠檬汁 15 ml","伍斯特酱、辣酱适量"],"steps":["杯中加入冰块和所有材料","轻轻滚动混合","按口味调盐和胡椒"],"glass":"高球杯","garnish":"芹菜与柠檬","taste":"咸鲜","abv":8}
+]
