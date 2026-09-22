@@ -1,0 +1,37 @@
+# Dependencies and generated files
+node_modules/
+**/node_modules/
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
+build/
+**/build/
+coverage/
+.gradle/
+.gradle-*/
+**/.gradle/
+**/.kotlin/
+**/.cxx/
+
+# Local IDE and debug files
+.idea/
+.vscode/
+.dbg/
+**/.dbg/
+*.iml
+*.log
+
+# Local configuration and signing credentials
+.env
+.env.*
+!.env.example
+key.properties
+**/key.properties
+*.jks
+*.keystore
+
+# OS files
+.DS_Store
+Thumbs.db

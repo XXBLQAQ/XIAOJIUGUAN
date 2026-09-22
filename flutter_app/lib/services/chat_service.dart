@@ -29,10 +29,13 @@ class ChatService extends ChangeNotifier {
   List<ChatMessage> messagesFor(String key) =>
       List.unmodifiable(_messages[key] ?? []);
 
-  String? conversationIdForUser(dynamic userId) {
+  String? conversationIdForUser(
+    dynamic userId, {
+    Iterable<Map<String, dynamic>>? chats,
+  }) {
     final target = userId?.toString();
     if (target == null || target.isEmpty) return null;
-    for (final chat in _chatList) {
+    for (final chat in chats ?? _chatList) {
       if (isGroupChat(chat)) continue;
       final id = _chatId(chat);
       if (id.isEmpty) continue;
