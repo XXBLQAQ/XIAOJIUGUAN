@@ -8,6 +8,7 @@ import '../features/home/home_page.dart';
 import '../features/minecraft/minecraft_server_page.dart';
 import '../features/travel/travel_planner_page.dart';
 import '../features/tools/local_tool_page.dart';
+import '../features/tools/more_local_tool_page.dart';
 import '../features/postal/postal_code_page.dart';
 import '../features/cocktail/cocktail_bar_page.dart';
 import '../features/cocktail/cocktail_notes_page.dart';
@@ -31,6 +32,10 @@ class AppRoutes {
   static const String randomWheel = '/random_wheel';
   static const String unitConverter = '/unit_converter';
   static const String passwordGenerator = '/password_generator';
+  static const String pomodoro = '/pomodoro';
+  static const String whatToEat = '/what_to_eat';
+  static const String bmi = '/bmi';
+  static const String timestamp = '/timestamp';
 
   static Route<dynamic> generateRoute(RouteSettings settings) {
     switch (settings.name) {
@@ -73,6 +78,17 @@ class AppRoutes {
         return _fadeRoute(const LocalToolPage(tool: LocalTool.converter));
       case passwordGenerator:
         return _fadeRoute(const LocalToolPage(tool: LocalTool.password));
+      case pomodoro:
+        return _fadeRoute(
+            const MoreLocalToolPage(tool: MoreLocalTool.pomodoro));
+      case whatToEat:
+        return _fadeRoute(
+            const MoreLocalToolPage(tool: MoreLocalTool.whatToEat));
+      case bmi:
+        return _fadeRoute(const MoreLocalToolPage(tool: MoreLocalTool.bmi));
+      case timestamp:
+        return _fadeRoute(
+            const MoreLocalToolPage(tool: MoreLocalTool.timestamp));
       default:
         return _fadeRoute(const SplashPage());
     }

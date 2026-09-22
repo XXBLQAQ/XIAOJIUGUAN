@@ -115,6 +115,18 @@ class _HomePageState extends State<HomePage> {
     _ExploreFeature(
         '密码生成器', '离线生成随机强密码', Icons.password_rounded, _themeAccent, true,
         type: _FeatureType.passwordGenerator),
+    _ExploreFeature(
+        '番茄时钟', '25 分钟专注计时器', Icons.timer_rounded, _themeAccent, true,
+        type: _FeatureType.pomodoro),
+    _ExploreFeature(
+        '今天吃什么', '从自定义菜品中随机选择', Icons.restaurant_rounded, _themeAccent, true,
+        type: _FeatureType.whatToEat),
+    _ExploreFeature('BMI 计算器', '根据身高体重计算 BMI', Icons.monitor_weight_outlined,
+        _themeAccent, true,
+        type: _FeatureType.bmi),
+    _ExploreFeature(
+        '时间戳转换', 'Unix 时间戳与日期互查', Icons.schedule_rounded, _themeAccent, true,
+        type: _FeatureType.timestamp),
   ];
 
   @override
@@ -206,8 +218,23 @@ class _HomePageState extends State<HomePage> {
                                                                         .name
                                                                 ? _FeatureType
                                                                     .passwordGenerator
-                                                                : _FeatureType
-                                                                    .standard;
+                                                                : savedType ==
+                                                                        _FeatureType
+                                                                            .pomodoro
+                                                                            .name
+                                                                    ? _FeatureType
+                                                                        .pomodoro
+                                                                    : savedType ==
+                                                                            _FeatureType
+                                                                                .whatToEat.name
+                                                                        ? _FeatureType
+                                                                            .whatToEat
+                                                                        : savedType ==
+                                                                                _FeatureType.bmi.name
+                                                                            ? _FeatureType.bmi
+                                                                            : savedType == _FeatureType.timestamp.name
+                                                                                ? _FeatureType.timestamp
+                                                                                : _FeatureType.standard;
         return _ExploreFeature(
           item['title']?.toString() ?? '功能',
           item['subtitle']?.toString() ?? '',
@@ -1280,6 +1307,18 @@ class _HomePageState extends State<HomePage> {
         }
         if (feature.type == _FeatureType.passwordGenerator) {
           Navigator.pushNamed(context, AppRoutes.passwordGenerator);
+        }
+        if (feature.type == _FeatureType.pomodoro) {
+          Navigator.pushNamed(context, AppRoutes.pomodoro);
+        }
+        if (feature.type == _FeatureType.whatToEat) {
+          Navigator.pushNamed(context, AppRoutes.whatToEat);
+        }
+        if (feature.type == _FeatureType.bmi) {
+          Navigator.pushNamed(context, AppRoutes.bmi);
+        }
+        if (feature.type == _FeatureType.timestamp) {
+          Navigator.pushNamed(context, AppRoutes.timestamp);
         }
       },
       borderRadius: BorderRadius.circular(24),
@@ -3454,6 +3493,18 @@ class _HomePageState extends State<HomePage> {
         _ExploreFeature(
             '密码生成器', '离线生成随机强密码', Icons.password_rounded, _themeAccent, true,
             type: _FeatureType.passwordGenerator),
+        _ExploreFeature(
+            '番茄时钟', '25 分钟专注计时器', Icons.timer_rounded, _themeAccent, true,
+            type: _FeatureType.pomodoro),
+        _ExploreFeature('今天吃什么', '从自定义菜品中随机选择', Icons.restaurant_rounded,
+            _themeAccent, true,
+            type: _FeatureType.whatToEat),
+        _ExploreFeature('BMI 计算器', '根据身高体重计算 BMI',
+            Icons.monitor_weight_outlined, _themeAccent, true,
+            type: _FeatureType.bmi),
+        _ExploreFeature('时间戳转换', 'Unix 时间戳与日期互查', Icons.schedule_rounded,
+            _themeAccent, true,
+            type: _FeatureType.timestamp),
       ];
 }
 
@@ -3510,6 +3561,10 @@ enum _FeatureType {
   randomWheel,
   unitConverter,
   passwordGenerator,
+  pomodoro,
+  whatToEat,
+  bmi,
+  timestamp,
 }
 
 class _ExploreFeature {
