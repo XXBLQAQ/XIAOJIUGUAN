@@ -13,6 +13,9 @@ Future<void> downloadAndInstallUpdatePlatform({
   required UpdateCancellationToken cancellationToken,
   void Function(double progress)? onProgress,
 }) async {
+  if (!Platform.isAndroid) {
+    throw UnsupportedError('当前平台不支持 Android APK 自动安装');
+  }
   final client = http.Client();
   File? file;
   IOSink? sink;

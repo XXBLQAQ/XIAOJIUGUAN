@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 import '../core/api_client.dart';
@@ -53,6 +54,9 @@ class AppReleaseLog {
 class AppUpdateService {
   static const _apiOrigin = 'https://api.xxblqaq.cn';
 
+  bool get supportsApkUpdates =>
+      !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
+
   Future<List<AppReleaseLog>> getReleaseLogs() async {
     final response =
         await ApiClient().get('/app/releases', authenticated: false, params: {
@@ -72,6 +76,7 @@ class AppUpdateService {
   }
 
   Future<AppUpdateInfo?> check() async {
+    if (!supportsApkUpdates) return null;
     final package = await PackageInfo.fromPlatform();
     final currentCode = int.tryParse(package.buildNumber) ?? 0;
     final response = await ApiClient().get(

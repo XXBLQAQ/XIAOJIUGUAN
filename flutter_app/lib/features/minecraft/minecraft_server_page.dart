@@ -352,8 +352,14 @@ class _MinecraftServerPageState extends State<MinecraftServerPage> {
   Future<void> _saveServer() async {
     final port = int.tryParse(_portController.text.trim());
     if (_nameController.text.trim().isEmpty ||
-        _addressController.text.trim().isEmpty ||
-        port == null) {
+        _addressController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('请填写服务器名称和地址')));
+      return;
+    }
+    if (port == null || port < 1 || port > 65535) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('端口必须在 1 到 65535 之间')));
       return;
     }
     await context.read<MinecraftServerService>().updateServer(
