@@ -103,6 +103,18 @@ class _HomePageState extends State<HomePage> {
     _ExploreFeature(
         '调酒配方', '浏览经典调酒配方', Icons.local_bar_rounded, _themeAccent, true,
         type: _FeatureType.cocktailRecipes),
+    _ExploreFeature(
+        '倒数日', '记录重要日子的剩余时间', Icons.event_available_rounded, _themeAccent, true,
+        type: _FeatureType.countdown),
+    _ExploreFeature(
+        '随机转盘', '让随机选择帮你做决定', Icons.casino_rounded, _themeAccent, true,
+        type: _FeatureType.randomWheel),
+    _ExploreFeature(
+        '单位换算', '长度、温度与重量快速换算', Icons.swap_horiz_rounded, _themeAccent, true,
+        type: _FeatureType.unitConverter),
+    _ExploreFeature(
+        '密码生成器', '离线生成随机强密码', Icons.password_rounded, _themeAccent, true,
+        type: _FeatureType.passwordGenerator),
   ];
 
   @override
@@ -172,7 +184,30 @@ class _HomePageState extends State<HomePage> {
                                                     _FeatureType
                                                         .cocktailRecipes.name
                                                 ? _FeatureType.cocktailRecipes
-                                                : _FeatureType.standard;
+                                                : savedType ==
+                                                        _FeatureType
+                                                            .countdown.name
+                                                    ? _FeatureType.countdown
+                                                    : savedType ==
+                                                            _FeatureType
+                                                                .randomWheel
+                                                                .name
+                                                        ? _FeatureType
+                                                            .randomWheel
+                                                        : savedType ==
+                                                                _FeatureType
+                                                                    .unitConverter
+                                                                    .name
+                                                            ? _FeatureType
+                                                                .unitConverter
+                                                            : savedType ==
+                                                                    _FeatureType
+                                                                        .passwordGenerator
+                                                                        .name
+                                                                ? _FeatureType
+                                                                    .passwordGenerator
+                                                                : _FeatureType
+                                                                    .standard;
         return _ExploreFeature(
           item['title']?.toString() ?? '功能',
           item['subtitle']?.toString() ?? '',
@@ -1233,6 +1268,18 @@ class _HomePageState extends State<HomePage> {
         }
         if (feature.type == _FeatureType.travelPlanner) {
           Navigator.pushNamed(context, AppRoutes.travelPlanner);
+        }
+        if (feature.type == _FeatureType.countdown) {
+          Navigator.pushNamed(context, AppRoutes.countdown);
+        }
+        if (feature.type == _FeatureType.randomWheel) {
+          Navigator.pushNamed(context, AppRoutes.randomWheel);
+        }
+        if (feature.type == _FeatureType.unitConverter) {
+          Navigator.pushNamed(context, AppRoutes.unitConverter);
+        }
+        if (feature.type == _FeatureType.passwordGenerator) {
+          Navigator.pushNamed(context, AppRoutes.passwordGenerator);
         }
       },
       borderRadius: BorderRadius.circular(24),
@@ -3395,6 +3442,18 @@ class _HomePageState extends State<HomePage> {
         _ExploreFeature(
             '调酒配方', '浏览经典调酒配方', Icons.local_bar_rounded, _themeAccent, true,
             type: _FeatureType.cocktailRecipes),
+        _ExploreFeature('倒数日', '记录重要日子的剩余时间', Icons.event_available_rounded,
+            _themeAccent, true,
+            type: _FeatureType.countdown),
+        _ExploreFeature(
+            '随机转盘', '让随机选择帮你做决定', Icons.casino_rounded, _themeAccent, true,
+            type: _FeatureType.randomWheel),
+        _ExploreFeature('单位换算', '长度、温度与重量快速换算', Icons.swap_horiz_rounded,
+            _themeAccent, true,
+            type: _FeatureType.unitConverter),
+        _ExploreFeature(
+            '密码生成器', '离线生成随机强密码', Icons.password_rounded, _themeAccent, true,
+            type: _FeatureType.passwordGenerator),
       ];
 }
 
@@ -3447,6 +3506,10 @@ enum _FeatureType {
   cocktailBar,
   cocktailNotes,
   cocktailRecipes,
+  countdown,
+  randomWheel,
+  unitConverter,
+  passwordGenerator,
 }
 
 class _ExploreFeature {

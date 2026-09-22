@@ -7,6 +7,7 @@ import '../features/moments/moments_page.dart';
 import '../features/home/home_page.dart';
 import '../features/minecraft/minecraft_server_page.dart';
 import '../features/travel/travel_planner_page.dart';
+import '../features/tools/local_tool_page.dart';
 import '../features/postal/postal_code_page.dart';
 import '../features/cocktail/cocktail_bar_page.dart';
 import '../features/cocktail/cocktail_notes_page.dart';
@@ -26,6 +27,10 @@ class AppRoutes {
   static const String cocktailBar = '/cocktail_bar';
   static const String cocktailNotes = '/cocktail_notes';
   static const String cocktailRecipes = '/cocktail_recipes';
+  static const String countdown = '/countdown';
+  static const String randomWheel = '/random_wheel';
+  static const String unitConverter = '/unit_converter';
+  static const String passwordGenerator = '/password_generator';
 
   static Route<dynamic> generateRoute(RouteSettings settings) {
     switch (settings.name) {
@@ -60,6 +65,14 @@ class AppRoutes {
         return _fadeRoute(const CocktailNotesPage());
       case cocktailRecipes:
         return _fadeRoute(const CocktailRecipePage());
+      case countdown:
+        return _fadeRoute(const LocalToolPage(tool: LocalTool.countdown));
+      case randomWheel:
+        return _fadeRoute(const LocalToolPage(tool: LocalTool.wheel));
+      case unitConverter:
+        return _fadeRoute(const LocalToolPage(tool: LocalTool.converter));
+      case passwordGenerator:
+        return _fadeRoute(const LocalToolPage(tool: LocalTool.password));
       default:
         return _fadeRoute(const SplashPage());
     }
