@@ -127,6 +127,18 @@ class _HomePageState extends State<HomePage> {
     _ExploreFeature(
         '时间戳转换', 'Unix 时间戳与日期互查', Icons.schedule_rounded, _themeAccent, true,
         type: _FeatureType.timestamp),
+    _ExploreFeature(
+        'Base64 编解码', '离线编码与解码文本', Icons.code_rounded, _themeAccent, true,
+        type: _FeatureType.base64Tool),
+    _ExploreFeature(
+        '随机数生成器', '在指定范围内生成随机数', Icons.numbers_rounded, _themeAccent, true,
+        type: _FeatureType.randomNumber),
+    _ExploreFeature(
+        '日期计算器', '计算两个日期相差的天数', Icons.date_range_rounded, _themeAccent, true,
+        type: _FeatureType.dateCalculator),
+    _ExploreFeature(
+        '进制转换器', '二、八、十、十六进制互转', Icons.transform_rounded, _themeAccent, true,
+        type: _FeatureType.baseConverter),
   ];
 
   @override
@@ -234,7 +246,15 @@ class _HomePageState extends State<HomePage> {
                                                                             ? _FeatureType.bmi
                                                                             : savedType == _FeatureType.timestamp.name
                                                                                 ? _FeatureType.timestamp
-                                                                                : _FeatureType.standard;
+                                                                                : savedType == _FeatureType.base64Tool.name
+                                                                                    ? _FeatureType.base64Tool
+                                                                                    : savedType == _FeatureType.randomNumber.name
+                                                                                        ? _FeatureType.randomNumber
+                                                                                        : savedType == _FeatureType.dateCalculator.name
+                                                                                            ? _FeatureType.dateCalculator
+                                                                                            : savedType == _FeatureType.baseConverter.name
+                                                                                                ? _FeatureType.baseConverter
+                                                                                                : _FeatureType.standard;
         return _ExploreFeature(
           item['title']?.toString() ?? '功能',
           item['subtitle']?.toString() ?? '',
@@ -1319,6 +1339,18 @@ class _HomePageState extends State<HomePage> {
         }
         if (feature.type == _FeatureType.timestamp) {
           Navigator.pushNamed(context, AppRoutes.timestamp);
+        }
+        if (feature.type == _FeatureType.base64Tool) {
+          Navigator.pushNamed(context, AppRoutes.base64Tool);
+        }
+        if (feature.type == _FeatureType.randomNumber) {
+          Navigator.pushNamed(context, AppRoutes.randomNumber);
+        }
+        if (feature.type == _FeatureType.dateCalculator) {
+          Navigator.pushNamed(context, AppRoutes.dateCalculator);
+        }
+        if (feature.type == _FeatureType.baseConverter) {
+          Navigator.pushNamed(context, AppRoutes.baseConverter);
         }
       },
       borderRadius: BorderRadius.circular(24),
@@ -3505,6 +3537,18 @@ class _HomePageState extends State<HomePage> {
         _ExploreFeature('时间戳转换', 'Unix 时间戳与日期互查', Icons.schedule_rounded,
             _themeAccent, true,
             type: _FeatureType.timestamp),
+        _ExploreFeature(
+            'Base64 编解码', '离线编码与解码文本', Icons.code_rounded, _themeAccent, true,
+            type: _FeatureType.base64Tool),
+        _ExploreFeature(
+            '随机数生成器', '在指定范围内生成随机数', Icons.numbers_rounded, _themeAccent, true,
+            type: _FeatureType.randomNumber),
+        _ExploreFeature('日期计算器', '计算两个日期相差的天数', Icons.date_range_rounded,
+            _themeAccent, true,
+            type: _FeatureType.dateCalculator),
+        _ExploreFeature('进制转换器', '二、八、十、十六进制互转', Icons.transform_rounded,
+            _themeAccent, true,
+            type: _FeatureType.baseConverter),
       ];
 }
 
@@ -3565,6 +3609,10 @@ enum _FeatureType {
   whatToEat,
   bmi,
   timestamp,
+  base64Tool,
+  randomNumber,
+  dateCalculator,
+  baseConverter,
 }
 
 class _ExploreFeature {

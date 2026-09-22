@@ -9,6 +9,7 @@ import '../features/minecraft/minecraft_server_page.dart';
 import '../features/travel/travel_planner_page.dart';
 import '../features/tools/local_tool_page.dart';
 import '../features/tools/more_local_tool_page.dart';
+import '../features/tools/text_math_tool_page.dart';
 import '../features/postal/postal_code_page.dart';
 import '../features/cocktail/cocktail_bar_page.dart';
 import '../features/cocktail/cocktail_notes_page.dart';
@@ -36,6 +37,10 @@ class AppRoutes {
   static const String whatToEat = '/what_to_eat';
   static const String bmi = '/bmi';
   static const String timestamp = '/timestamp';
+  static const String base64Tool = '/base64';
+  static const String randomNumber = '/random_number';
+  static const String dateCalculator = '/date_calculator';
+  static const String baseConverter = '/base_converter';
 
   static Route<dynamic> generateRoute(RouteSettings settings) {
     switch (settings.name) {
@@ -89,6 +94,17 @@ class AppRoutes {
       case timestamp:
         return _fadeRoute(
             const MoreLocalToolPage(tool: MoreLocalTool.timestamp));
+      case base64Tool:
+        return _fadeRoute(const TextMathToolPage(tool: TextMathTool.base64));
+      case randomNumber:
+        return _fadeRoute(
+            const TextMathToolPage(tool: TextMathTool.randomNumber));
+      case dateCalculator:
+        return _fadeRoute(
+            const TextMathToolPage(tool: TextMathTool.dateCalculator));
+      case baseConverter:
+        return _fadeRoute(
+            const TextMathToolPage(tool: TextMathTool.baseConverter));
       default:
         return _fadeRoute(const SplashPage());
     }
