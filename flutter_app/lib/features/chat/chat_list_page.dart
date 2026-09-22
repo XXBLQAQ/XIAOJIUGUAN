@@ -77,8 +77,10 @@ class _ChatListPageState extends State<ChatListPage> {
         title: const Text('好友', style: TextStyle(fontWeight: FontWeight.w800)),
         actions: [
           IconButton(
-              onPressed: () {},
-              icon: Icon(Icons.edit_note_rounded, color: scheme.primary))
+            tooltip: '刷新聊天列表',
+            onPressed: chatService.loading ? null : chatService.loadChatList,
+            icon: Icon(Icons.refresh_rounded, color: scheme.primary),
+          )
         ],
       ),
       body: ListView(

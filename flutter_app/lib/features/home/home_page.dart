@@ -324,6 +324,31 @@ class _HomePageState extends State<HomePage> {
     ]);
   }
 
+  String _friendIdFromChat(Map<String, dynamic> chat, String? currentUserId) {
+    for (final key in [
+      'friend_id',
+      'friendId',
+      'other_user_id',
+      'otherUserId',
+    ]) {
+      final value = chat[key]?.toString().trim() ?? '';
+      if (value.isNotEmpty && value != currentUserId) return value;
+    }
+
+    final members =
+        chat['members'] ?? chat['participant_ids'] ?? chat['participants'];
+    if (members is! List) return '';
+    for (final member in members) {
+      final value = member is Map
+          ? (member['id'] ?? member['user_id'] ?? member['uid'])?.toString()
+          : member.toString();
+      if (value != null && value.isNotEmpty && value != currentUserId) {
+        return value;
+      }
+    }
+    return '';
+  }
+
   Future<void> _loadFriendChats() async {
     try {
       final chatService = context.read<ChatService>();
@@ -331,12 +356,8 @@ class _HomePageState extends State<HomePage> {
       if (!mounted) return;
       final currentUserId = chatService.currentUserId;
       for (final chat in chatService.chatList) {
-        final members = chat['members'];
-        if (members is! List) continue;
-        final friendId = members.map((member) => member.toString()).firstWhere(
-              (member) => member != currentUserId,
-              orElse: () => '',
-            );
+        if (ChatService.isGroupChat(chat)) continue;
+        final friendId = _friendIdFromChat(chat, currentUserId);
         final chatId =
             (chat['id'] ?? chat['conversation_id'] ?? chat['chatId'] ?? '')
                 .toString();
@@ -361,6 +382,25 @@ class _HomePageState extends State<HomePage> {
       _friendsError = null;
     });
     try {
+      if (!refresh && _friends.isEmpty) {
+        final userId = context.read<AuthService>().user?['id']?.toString() ??
+            context.read<AuthService>().user?['uid']?.toString() ??
+            'anonymous';
+        final preferences = await SharedPreferences.getInstance();
+        final cached = preferences.getString('friends_cache_$userId');
+        if (cached != null) {
+          final raw = jsonDecode(cached);
+          if (raw is List && mounted) {
+            setState(() {
+              _friends = raw
+                  .whereType<Map>()
+                  .map((item) => Map<String, dynamic>.from(item))
+                  .toList();
+              _friendsLoading = false;
+            });
+          }
+        }
+      }
       final response = await ApiClient().get('/friends').timeout(
             const Duration(seconds: 12),
           );
@@ -375,8 +415,18 @@ class _HomePageState extends State<HomePage> {
             .trim();
         if (key.isNotEmpty) unique[key] = friend;
       }
+      final friends = unique.values.toList();
+      final userId = context.read<AuthService>().user?['id']?.toString() ??
+          context.read<AuthService>().user?['uid']?.toString() ??
+          'anonymous';
+      final preferences = await SharedPreferences.getInstance();
+      await preferences.setString(
+        'friends_cache_$userId',
+        jsonEncode(friends),
+      );
+      if (!mounted) return;
       setState(() {
-        _friends = unique.values.toList();
+        _friends = friends;
       });
     } on TimeoutException {
       if (mounted) setState(() => _friendsError = '网络响应较慢，请点击重试');
@@ -704,7 +754,7 @@ class _HomePageState extends State<HomePage> {
         friend['last_message_at']?.toString() ??
         '';
     return SwipeableChatTile(
-      key: ValueKey('friend-$id'),
+      key: ValueKey('friend-${friendId.isNotEmpty ? friendId : nickname}'),
       name: nickname,
       text: lastMessage,
       icon: Icons.person_rounded,
@@ -2149,9 +2199,14 @@ class _HomePageState extends State<HomePage> {
                   final responseData = response.data is Map
                       ? Map<String, dynamic>.from(response.data as Map)
                       : <String, dynamic>{};
-                  final friend = responseData['user'] is Map
-                      ? Map<String, dynamic>.from(responseData['user'] as Map)
-                      : <String, dynamic>{};
+                  final payload = responseData['data'] is Map
+                      ? Map<String, dynamic>.from(responseData['data'] as Map)
+                      : responseData;
+                  final friend = payload['friend'] is Map
+                      ? Map<String, dynamic>.from(payload['friend'] as Map)
+                      : payload['user'] is Map
+                          ? Map<String, dynamic>.from(payload['user'] as Map)
+                          : <String, dynamic>{};
                   final nickname = friend['nickname']?.toString().trim();
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(

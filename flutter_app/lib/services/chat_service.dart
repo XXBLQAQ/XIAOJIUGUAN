@@ -33,10 +33,28 @@ class ChatService extends ChangeNotifier {
     final target = userId?.toString();
     if (target == null || target.isEmpty) return null;
     for (final chat in _chatList) {
+      if (isGroupChat(chat)) continue;
       final id = _chatId(chat);
-      final members = chat['members'];
-      if (id.isEmpty || members is! List) continue;
-      if (members.map((item) => item.toString()).contains(target)) return id;
+      if (id.isEmpty) continue;
+
+      for (final key in [
+        'friend_id',
+        'friendId',
+        'other_user_id',
+        'otherUserId'
+      ]) {
+        if (chat[key]?.toString() == target) return id;
+      }
+
+      final members =
+          chat['members'] ?? chat['participant_ids'] ?? chat['participants'];
+      if (members is! List) continue;
+      for (final member in members) {
+        final idValue = member is Map
+            ? (member['id'] ?? member['user_id'] ?? member['uid'])?.toString()
+            : member.toString();
+        if (idValue == target) return id;
+      }
     }
     return null;
   }
