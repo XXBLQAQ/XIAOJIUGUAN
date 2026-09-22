@@ -95,9 +95,12 @@ class _MinecraftServerPageState extends State<MinecraftServerPage> {
               TextField(
                   controller: _portController,
                   keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(
-                      labelText: '端口',
-                      prefixIcon: Icon(Icons.settings_ethernet_rounded))),
+                  decoration: InputDecoration(
+                      labelText: '端口（可留空）',
+                      hintText: _edition == MinecraftEdition.java
+                          ? '留空使用 Java 默认端口 25565'
+                          : '留空使用基岩版默认端口 19132',
+                      prefixIcon: const Icon(Icons.settings_ethernet_rounded))),
               const SizedBox(height: AppSpacing.sm),
               SegmentedButton<MinecraftEdition>(
                 segments: const [
@@ -350,7 +353,10 @@ class _MinecraftServerPageState extends State<MinecraftServerPage> {
   }
 
   Future<void> _saveServer() async {
-    final port = int.tryParse(_portController.text.trim());
+    final portText = _portController.text.trim();
+    final port = portText.isEmpty
+        ? (_edition == MinecraftEdition.java ? 25565 : 19132)
+        : int.tryParse(portText);
     if (_nameController.text.trim().isEmpty ||
         _addressController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context)
@@ -362,6 +368,7 @@ class _MinecraftServerPageState extends State<MinecraftServerPage> {
           .showSnackBar(const SnackBar(content: Text('端口必须在 1 到 65535 之间')));
       return;
     }
+    if (portText.isEmpty) _portController.text = port.toString();
     await context.read<MinecraftServerService>().updateServer(
         name: _nameController.text.trim(),
         address: _addressController.text.trim(),
