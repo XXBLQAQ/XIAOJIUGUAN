@@ -171,6 +171,7 @@ Content-Type: application/json
 | GET | `/chats/{chatId}/messages/sync` | 是 | 按 `after_seq` 增量同步 |
 | GET | `/groups/{groupId}/messages` | 是 | 获取群聊消息 |
 | POST | `/groups/{groupId}/messages` | 是 | 发送群聊消息 |
+| PUT | `/chats/{chatId}/read` | 是 | 提交已读游标 `lastReadSeq` |
 | GET | `/groups/{groupId}/messages/sync` | 是 | 增量同步群聊消息 |
 | PUT | `/chat-settings/{chatId}` | 是 | 更新 `pinned`、`unread` |
 | GET | `/notification-settings` | 是 | 获取通知设置 |
@@ -188,6 +189,8 @@ Content-Type: application/json
 ```
 
 `content` 去除首尾空白后应为 1～5000 个字符。`clientMessageId` 用于网络重试去重。聊天相关接口必须由服务端验证会话成员身份。
+已读接口请求体为 `{"lastReadSeq": 123}`，服务端建议返回统一响应格式并包含服务端确认的 `lastReadSeq`，例如 `{"data":{"chatId":"chat-id","lastReadSeq":123},"message":"操作成功"}`。服务端必须保证未读计数、会话 `lastReadSeq` 与消息 `is_read`/`read_at` 的更新一致，并按会话成员校验权限。Socket.IO 可额外支持 `chat:read` 事件并通过 ack 返回结果，但 REST 已读接口是客户端主路径。Android 进程被系统或用户杀死后 Socket.IO 无法接收消息，服务端应提供 FCM、APNs 或等价推送；Socket.IO 只保证客户端进程存活且连接可用时的实时通知。
+
 
 通知设置字段当前兼容 `chat`、`game`、`friend_request`、`system`；新服务建议统一使用 `friendRequest`。
 
@@ -214,7 +217,7 @@ Content-Type: application/json
 }
 ```
 
-服务端必须按会话和发起用户做好友关系、接收者授权和频率校验：同一发起方对同一接收方在任意滚动 60 秒内最多 3 次。无论客户端是否显示按钮，服务端都必须拒绝未授权和超限请求，并返回可展示错误，例如 `对方未授权震动控制功能`、`操作过于频繁，请稍后再试`。每次请求都必须写入不可篡改的审计日志，至少包含请求 ID、会话 ID、发起方、接收方、服务器时间、结果、拒绝原因及限流计数；日志不得记录 Token 或聊天内容。
+客户端默认将远程震动接收视为开启，用户可以在单个会话中明确关闭；本地默认开启不代表服务端已授权。服务端必须按会话和发起用户做好友关系、接收者授权和频率校验：同一发起方对同一接收方在任意滚动 60 秒内最多 3 次。无论客户端是否显示按钮，服务端都必须拒绝未授权和超限请求，并返回可展示错误，例如 `对方未授权震动控制功能`、`操作过于频繁，请稍后再试`。每次请求都必须写入不可篡改的审计日志，至少包含请求 ID、会话 ID、发起方、接收方、服务器时间、结果、拒绝原因及限流计数；日志不得记录 Token 或聊天内容。
 
 ### 6.6 Socket.IO
 

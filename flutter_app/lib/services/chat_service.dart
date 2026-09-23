@@ -12,6 +12,7 @@ class ChatService extends ChangeNotifier {
   final ApiClient _api = ApiClient();
   final Map<String, List<ChatMessage>> _messages = {};
   final Map<String, int> _lastSeq = {};
+  final Map<String, int> _acknowledgedReadSeq = {};
   final Set<String> _groupKeys = {};
   List<Map<String, dynamic>> _chatList = [];
   bool _loading = false;
@@ -106,7 +107,45 @@ class ChatService extends ChangeNotifier {
   Future<void> markConversationRead(String chatId) async {
     if (chatId.isEmpty) return;
     _activeConversationId = chatId;
-    await updateChatSetting(chatId, 'unread', false);
+    final now = DateTime.now();
+    final index = _chatList.indexWhere((chat) => _chatId(chat) == chatId);
+    if (index >= 0) {
+      _chatList[index]['unread_count'] = 0;
+      _chatList[index]['unread'] = false;
+    }
+    final messages = _messages[chatId];
+    if (messages != null) {
+      _messages[chatId] = messages.map((message) {
+        final mine = message.senderIdString.isNotEmpty &&
+            message.senderIdString == _userId;
+        return mine || message.isRead
+            ? message
+            : message.copyWith(isRead: true, readAt: now);
+      }).toList();
+    }
+    _sortChats();
+    notifyListeners();
+    await acknowledgeConversationRead(chatId,
+        lastReadSeq: lastMessageSeq(chatId));
+  }
+
+  Future<void> acknowledgeConversationRead(String chatId,
+      {int? lastReadSeq}) async {
+    if (chatId.isEmpty) return;
+    final seq = lastReadSeq ?? lastMessageSeq(chatId);
+    final previous = _acknowledgedReadSeq[chatId] ?? 0;
+    if (seq <= previous) return;
+    _acknowledgedReadSeq[chatId] = seq;
+    try {
+      await _api.put('/chats/$chatId/read', data: {'lastReadSeq': seq});
+    } catch (error) {
+      debugPrint('[Chat] 同步已读回执失败，使用兼容接口: $error');
+      try {
+        await updateChatSetting(chatId, 'unread', false);
+      } catch (fallbackError) {
+        debugPrint('[Chat] 清除远端未读状态失败: $fallbackError');
+      }
+    }
   }
 
   void clearActiveConversation(String chatId) {
@@ -449,6 +488,12 @@ class ChatService extends ChangeNotifier {
       debugPrint('[Chat] 收到消息但无法识别会话: ${message.identity}');
       return null;
     }
+    final isMine =
+        message.senderIdString.isNotEmpty && message.senderIdString == _userId;
+    final isActiveIncoming = _activeConversationId == key && !isMine;
+    if (isActiveIncoming) {
+      message = message.copyWith(isRead: true, readAt: DateTime.now());
+    }
     final isNew = !hasMessage(key, message);
     final sequence = message.messageSeq;
     if (sequence != null && sequence > lastMessageSeq(key)) {
@@ -457,6 +502,9 @@ class ChatService extends ChangeNotifier {
     mergeMessage(key, message, notify: false);
     if (isNew) _updateChatSummary(key, message);
     notifyListeners();
+    if (isActiveIncoming) {
+      unawaited(acknowledgeConversationRead(key, lastReadSeq: sequence));
+    }
     return key;
   }
 

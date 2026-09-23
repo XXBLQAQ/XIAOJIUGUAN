@@ -7,7 +7,6 @@ import 'package:vibration/vibration.dart';
 
 import '../core/api_client.dart';
 import 'chat_socket_service.dart';
-import 'remote_vibration_policy.dart';
 
 class RemoteVibrationPermission {
   final bool localEnabled;
@@ -36,14 +35,14 @@ class RemoteVibrationPermission {
 class RemoteVibrationService extends ChangeNotifier {
   static const _duration = Duration(milliseconds: 500);
   static const _localEnabledKey = 'remote_vibration_enabled_chats';
+  static const _localDisabledKey = 'remote_vibration_disabled_chats';
 
   final ApiClient _api;
   final ChatSocketService _socket;
   final Map<String, RemoteVibrationPermission> _permissions = {};
   final Set<String> _loadingChats = {};
   final Set<String> _localEnabledChats = {};
-  final List<DateTime> _sentTriggerTimestamps = [];
-  final List<DateTime> _receivedTriggerTimestamps = [];
+  final Set<String> _localDisabledChats = {};
   String? _userId;
   int _sessionRevision = 0;
 
@@ -62,8 +61,7 @@ class RemoteVibrationService extends ChangeNotifier {
     _permissions.clear();
     _loadingChats.clear();
     _localEnabledChats.clear();
-    _sentTriggerTimestamps.clear();
-    _receivedTriggerTimestamps.clear();
+    _localDisabledChats.clear();
     await _restoreLocalPermissions(_sessionRevision);
     notifyListeners();
   }
@@ -82,10 +80,15 @@ class RemoteVibrationService extends ChangeNotifier {
     if (_userId == null) return;
     final preferences = await SharedPreferences.getInstance();
     final chats = preferences.getStringList(_localPermissionKey) ?? const [];
+    final disabled =
+        preferences.getStringList('$_localDisabledKey.$_userId') ?? const [];
     if (revision != _sessionRevision || _userId == null) return;
     _localEnabledChats
       ..clear()
       ..addAll(chats);
+    _localDisabledChats
+      ..clear()
+      ..addAll(disabled);
   }
 
   Future<void> _persistLocalPermissions() async {
@@ -94,6 +97,10 @@ class RemoteVibrationService extends ChangeNotifier {
     await preferences.setStringList(
       _localPermissionKey,
       _localEnabledChats.toList(),
+    );
+    await preferences.setStringList(
+      '$_localDisabledKey.$_userId',
+      _localDisabledChats.toList(),
     );
   }
 
@@ -110,15 +117,14 @@ class RemoteVibrationService extends ChangeNotifier {
       if (payload.isNotEmpty) {
         final remote = RemoteVibrationPermission.fromJson(payload);
         _permissions[chatId] = RemoteVibrationPermission(
-          localEnabled:
-              _localEnabledChats.contains(chatId) || remote.localEnabled,
+          localEnabled: !_localDisabledChats.contains(chatId),
           peerAuthorized: remote.peerAuthorized,
         );
       }
     } catch (error) {
       debugPrint('[RemoteVibration] 读取授权状态失败: $error');
       _permissions[chatId] = RemoteVibrationPermission(
-        localEnabled: _localEnabledChats.contains(chatId),
+        localEnabled: !_localDisabledChats.contains(chatId),
         peerAuthorized: false,
       );
     } finally {
@@ -141,8 +147,10 @@ class RemoteVibrationService extends ChangeNotifier {
       final payload = _payload(response.data);
       if (enabled) {
         _localEnabledChats.add(chatId);
+        _localDisabledChats.remove(chatId);
       } else {
         _localEnabledChats.remove(chatId);
+        _localDisabledChats.add(chatId);
       }
       await _persistLocalPermissions();
       final current = _permissions[chatId];
@@ -159,34 +167,19 @@ class RemoteVibrationService extends ChangeNotifier {
     }
   }
 
-  /// null 表示服务端已接收。客户端和服务端均执行每分钟最多三次的保护。
+  /// null 表示服务端已接收，频率限制由服务端统一执行。
   Future<String?> trigger(String chatId, dynamic receiverId) async {
     if (_userId == null) return '请先登录后再触发远程震动';
     final permission = _permissions[chatId];
     if (permission?.canSend != true) return '对方未授权震动控制功能';
 
-    final now = DateTime.now();
-    RemoteVibrationPolicy.discardExpired(_sentTriggerTimestamps, now);
-    if (!RemoteVibrationPolicy.isWithinLimit(_sentTriggerTimestamps, now)) {
-      return '远程震动过于频繁，请稍后再试';
-    }
-
-    // 在发送前记录，避免网络失败后连续重试绕过客户端限流。
-    _sentTriggerTimestamps.add(now);
     return _socket.triggerRemoteVibration(chatId, receiverId: receiverId);
   }
 
   Future<void> _handleRemoteVibration(Map<String, dynamic> command) async {
     final chatId = command['chatId']?.toString() ?? '';
-    if (chatId.isEmpty || !_localEnabledChats.contains(chatId)) {
+    if (chatId.isEmpty || _localDisabledChats.contains(chatId)) {
       debugPrint('[RemoteVibration] 拒绝未授权的震动指令');
-      return;
-    }
-
-    final now = DateTime.now();
-    RemoteVibrationPolicy.discardExpired(_receivedTriggerTimestamps, now);
-    if (!RemoteVibrationPolicy.isWithinLimit(_receivedTriggerTimestamps, now)) {
-      debugPrint('[RemoteVibration] 接收端限流：一分钟内最多震动三次');
       return;
     }
 
@@ -195,7 +188,6 @@ class RemoteVibrationService extends ChangeNotifier {
       return;
     }
     try {
-      _receivedTriggerTimestamps.add(now);
       await Vibration.vibrate(duration: _duration.inMilliseconds);
     } catch (error, stackTrace) {
       debugPrint('[RemoteVibration] 执行震动失败: $error\n$stackTrace');

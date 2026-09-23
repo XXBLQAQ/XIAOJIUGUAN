@@ -15,6 +15,7 @@ class ChatSocketService extends ChangeNotifier with WidgetsBindingObserver {
   io.Socket? _socket;
   String? _token;
   String? _conversationId;
+  final Set<String> _joinedConversationIds = {};
   bool _connected = false;
   Timer? _typingTimer;
   void Function()? onReconnected;
@@ -22,6 +23,7 @@ class ChatSocketService extends ChangeNotifier with WidgetsBindingObserver {
 
   ChatSocketService(this.chatService, this.notificationService) {
     WidgetsBinding.instance.addObserver(this);
+    chatService.addListener(refreshConversationSubscriptions);
   }
 
   bool get connected => _connected;
@@ -67,7 +69,8 @@ class ChatSocketService extends ChangeNotifier with WidgetsBindingObserver {
           return;
         }
         _connected = true;
-        _join();
+        _joinedConversationIds.clear();
+        _joinKnownConversations();
         notifyListeners();
         unawaited(chatService.syncAll());
         if (wasConnected) onReconnected?.call();
@@ -83,26 +86,34 @@ class ChatSocketService extends ChangeNotifier with WidgetsBindingObserver {
     socket.connect();
   }
 
-  void _join() {
-    if (_socket?.connected == true && _conversationId != null) {
-      _socket!.emitWithAck('chat:join', _conversationId, ack: (response) {
-        if (response is Map && response['error'] != null) {
-          debugPrint('[ChatSocket] 加入会话失败: ${response['error']}');
-        }
-      });
+  void _joinKnownConversations() {
+    for (final chat in chatService.chatList) {
+      _joinConversation(_chatId(chat));
     }
+    _joinConversation(_conversationId);
   }
+
+  void _joinConversation(String? id) {
+    if (id == null || id.isEmpty || _socket?.connected != true) return;
+    if (!_joinedConversationIds.add(id)) return;
+    _socket!.emitWithAck('chat:join', id, ack: (response) {
+      if (response is Map && response['error'] != null) {
+        _joinedConversationIds.remove(id);
+        debugPrint('[ChatSocket] 加入会话失败: ${response['error']}');
+      }
+    });
+  }
+
+  String _chatId(Map<String, dynamic> chat) =>
+      (chat['id'] ?? chat['conversation_id'] ?? chat['chatId'] ?? '')
+          .toString();
 
   void joinConversation(String id) {
     _conversationId = id;
-    if (_socket?.connected == true) {
-      _socket!.emitWithAck('chat:join', id, ack: (response) {
-        if (response is Map && response['error'] != null) {
-          debugPrint('[ChatSocket] 加入会话失败: ${response['error']}');
-        }
-      });
-    }
+    _joinConversation(id);
   }
+
+  void refreshConversationSubscriptions() => _joinKnownConversations();
 
   Future<bool> sendMessage(String chatId, String content,
       {String type = 'text',
@@ -120,6 +131,20 @@ class ChatSocketService extends ChangeNotifier with WidgetsBindingObserver {
       'type': type,
       if (receiverId != null) 'receiverId': receiverId,
       if (clientMessageId != null) 'clientMessageId': clientMessageId,
+    }, ack: (response) {
+      final failed = response is Map && response['error'] != null;
+      if (!completer.isCompleted) completer.complete(!failed);
+    });
+    return completer.future
+        .timeout(const Duration(seconds: 8), onTimeout: () => false);
+  }
+
+  Future<bool> sendReadReceipt(String chatId, {int? lastReadSeq}) async {
+    if (_socket?.connected != true || chatId.isEmpty) return false;
+    final completer = Completer<bool>();
+    _socket!.emitWithAck('chat:read', {
+      'chatId': chatId,
+      if (lastReadSeq != null) 'lastReadSeq': lastReadSeq,
     }, ack: (response) {
       final failed = response is Map && response['error'] != null;
       if (!completer.isCompleted) completer.complete(!failed);
@@ -213,6 +238,7 @@ class ChatSocketService extends ChangeNotifier with WidgetsBindingObserver {
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    chatService.removeListener(refreshConversationSubscriptions);
     disconnect();
     super.dispose();
   }

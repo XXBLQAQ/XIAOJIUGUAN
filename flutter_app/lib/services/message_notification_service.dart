@@ -96,6 +96,7 @@ class MessageNotificationService extends ChangeNotifier
       description: '好友新消息通知',
       importance: Importance.high,
       playSound: true,
+      enableVibration: true,
     );
     await _plugin
         .resolvePlatformSpecificImplementation<
@@ -182,6 +183,8 @@ class MessageNotificationService extends ChangeNotifier
 
   Future<void> showMessage(ChatMessage message,
       {String? chatName, String? chatIdOverride}) async {
+    if (kIsWeb) return;
+    await initialize();
     final chatId = chatIdOverride ?? message.chatId;
     if (!_settings.chat || chatId.isEmpty || shouldSuppress(chatId)) return;
     final title = message.senderNickname.trim().isEmpty
@@ -197,9 +200,8 @@ class MessageNotificationService extends ChangeNotifier
     final appInForeground = _lifecycle == AppLifecycleState.resumed;
     if (appInForeground) {
       _showForegroundBanner(title, content, routeArgs, message.senderAvatar);
-      return;
     }
-    await _showSystemNotification(title, content, routeArgs);
+    await _showSystemNotification(title, content, routeArgs, message: message);
   }
 
   void _showForegroundBanner(
@@ -273,15 +275,16 @@ class MessageNotificationService extends ChangeNotifier
   }
 
   Future<void> _showSystemNotification(
-      String title, String content, Map<String, dynamic> routeArgs) async {
+      String title, String content, Map<String, dynamic> routeArgs,
+      {required ChatMessage message}) async {
     if (!_ready || kIsWeb) return;
     final chatId = routeArgs['chatId']?.toString() ?? '';
     if (chatId.isEmpty) return;
     await _plugin.show(
-      chatId.hashCode & 0x7fffffff,
+      _notificationId(message),
       title,
       content,
-      const NotificationDetails(
+      NotificationDetails(
         android: AndroidNotificationDetails(
           'chat_messages',
           '好友消息',
@@ -289,8 +292,12 @@ class MessageNotificationService extends ChangeNotifier
           importance: Importance.high,
           priority: Priority.high,
           ticker: '新消息',
+          playSound: true,
+          enableVibration: true,
+          vibrationPattern: Int64List.fromList(<int>[0, 250, 150, 250]),
+          groupKey: 'chat:$chatId',
         ),
-        iOS: DarwinNotificationDetails(
+        iOS: const DarwinNotificationDetails(
           presentAlert: true,
           presentBadge: true,
           presentSound: true,
@@ -298,6 +305,13 @@ class MessageNotificationService extends ChangeNotifier
       ),
       payload: jsonEncode(routeArgs),
     );
+  }
+
+  int _notificationId(ChatMessage message) {
+    final stable = message.id ?? message.messageSeq;
+    return (stable?.toString().hashCode ??
+            DateTime.now().microsecondsSinceEpoch) &
+        0x7fffffff;
   }
 
   void _onNotificationTap(NotificationResponse response) {

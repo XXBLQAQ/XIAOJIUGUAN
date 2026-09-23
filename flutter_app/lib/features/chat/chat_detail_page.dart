@@ -36,11 +36,15 @@ class _ChatDetailPageState extends State<ChatDetailPage>
   Timer? _typingTimer;
   bool _triggeringVibration = false;
   bool _initialLoadComplete = false;
+  bool _composerFocused = false;
+  bool _hasMessageDraft = false;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _inputFocusNode.addListener(_refreshComposerState);
+    _inputController.addListener(_refreshComposerState);
     final chat = context.read<ChatService>();
     context.read<MessageNotificationService>().setActiveChat(widget.chatId);
     context.read<ChatSocketService>().joinConversation(widget.chatId);
@@ -54,13 +58,15 @@ class _ChatDetailPageState extends State<ChatDetailPage>
 
   Future<void> _loadConversation(ChatService chat) async {
     try {
-      await chat.markConversationRead(widget.chatId);
       await chat.restoreLocal(widget.chatId);
       if (widget.isGroup) {
         await chat.loadGroupMessages(widget.chatId);
       } else {
         await chat.loadMessages(widget.chatId);
       }
+      await chat.markConversationRead(widget.chatId);
+      unawaited(chat.acknowledgeConversationRead(widget.chatId,
+          lastReadSeq: chat.lastMessageSeq(widget.chatId)));
     } finally {
       if (mounted) {
         setState(() => _initialLoadComplete = true);
@@ -96,6 +102,18 @@ class _ChatDetailPageState extends State<ChatDetailPage>
         ChatMessageStatus.failed => '发送失败，点击重试',
         ChatMessageStatus.sent => message.isRead ? '已读' : '已发送',
       };
+
+  void _refreshComposerState() {
+    final hasDraft = _inputController.text.trim().isNotEmpty;
+    if (_composerFocused == _inputFocusNode.hasFocus &&
+        _hasMessageDraft == hasDraft) {
+      return;
+    }
+    setState(() {
+      _composerFocused = _inputFocusNode.hasFocus;
+      _hasMessageDraft = hasDraft;
+    });
+  }
 
   void _onChanged(String value) {
     _typingTimer?.cancel();
@@ -154,7 +172,7 @@ class _ChatDetailPageState extends State<ChatDetailPage>
           final permission = context
               .watch<RemoteVibrationService>()
               .permissionFor(widget.chatId);
-          final enabled = permission?.localEnabled ?? false;
+          final enabled = permission?.localEnabled ?? true;
           return SafeArea(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
@@ -206,6 +224,8 @@ class _ChatDetailPageState extends State<ChatDetailPage>
     context.read<ChatService>().clearActiveConversation(widget.chatId);
     context.read<MessageNotificationService>().setActiveChat(null);
     WidgetsBinding.instance.removeObserver(this);
+    _inputController.removeListener(_refreshComposerState);
+    _inputFocusNode.removeListener(_refreshComposerState);
     _inputController.dispose();
     _inputFocusNode.dispose();
     _scrollController.dispose();
@@ -304,38 +324,58 @@ class _ChatDetailPageState extends State<ChatDetailPage>
 
   Widget _buildComposer(bool canRemoteVibrate) {
     final scheme = Theme.of(context).colorScheme;
+    final active = _composerFocused || _hasMessageDraft;
+    final fieldRadius = BorderRadius.circular(AppRadius.input);
+    final iconButtonStyle = IconButton.styleFrom(
+      minimumSize: const Size(44, 44),
+      foregroundColor: scheme.onSurface.withValues(alpha: .72),
+    );
+
     return SafeArea(
       top: false,
-      child: Padding(
+      child: Container(
         padding: const EdgeInsets.fromLTRB(
           AppSpacing.md,
-          AppSpacing.xs,
+          AppSpacing.sm,
           AppSpacing.md,
           AppSpacing.sm,
         ),
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            color: scheme.surface,
-            borderRadius: BorderRadius.circular(AppRadius.input),
-            border: Border.all(color: scheme.outline.withValues(alpha: .55)),
+        decoration: BoxDecoration(
+          color: scheme.surface,
+          border: Border(
+            top: BorderSide(color: scheme.outline.withValues(alpha: .22)),
           ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              if (canRemoteVibrate)
-                IconButton(
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            if (canRemoteVibrate)
+              Padding(
+                padding: const EdgeInsets.only(right: AppSpacing.xs),
+                child: IconButton(
                   tooltip: '远程震动',
+                  style: iconButtonStyle,
                   onPressed:
                       _triggeringVibration ? null : _triggerRemoteVibration,
                   icon: _triggeringVibration
                       ? const SizedBox(
-                          width: 20,
-                          height: 20,
+                          width: 18,
+                          height: 18,
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
                       : const Icon(Icons.vibration_rounded),
                 ),
-              Expanded(
+              ),
+            Expanded(
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 160),
+                constraints: const BoxConstraints(minHeight: 48),
+                decoration: BoxDecoration(
+                  color: active
+                      ? scheme.primaryContainer.withValues(alpha: .42)
+                      : scheme.surfaceContainerHighest.withValues(alpha: .62),
+                  borderRadius: fieldRadius,
+                ),
                 child: TextField(
                   controller: _inputController,
                   focusNode: _inputFocusNode,
@@ -343,28 +383,50 @@ class _ChatDetailPageState extends State<ChatDetailPage>
                   maxLines: 5,
                   maxLength: 5000,
                   textInputAction: TextInputAction.newline,
+                  textCapitalization: TextCapitalization.sentences,
                   onChanged: _onChanged,
-                  decoration: const InputDecoration(
+                  style: TextStyle(
+                    color: scheme.onSurface,
+                    fontSize: 15,
+                    height: 1.35,
+                  ),
+                  decoration: InputDecoration(
                     hintText: '输入消息',
+                    hintStyle: TextStyle(
+                      color: scheme.onSurface.withValues(alpha: .46),
+                    ),
                     counterText: '',
                     border: InputBorder.none,
                     enabledBorder: InputBorder.none,
                     focusedBorder: InputBorder.none,
-                    contentPadding: EdgeInsets.symmetric(
-                      horizontal: AppSpacing.sm,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.md,
                       vertical: 12,
                     ),
                   ),
                 ),
               ),
-              IconButton.filled(
-                tooltip: '发送',
-                onPressed: _send,
-                icon: const Icon(Icons.send_rounded),
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 160),
+              width: 48,
+              height: 48,
+              child: IconButton.filled(
+                tooltip: _hasMessageDraft ? '发送消息' : '请输入消息',
+                onPressed: _hasMessageDraft ? _send : null,
+                style: IconButton.styleFrom(
+                  backgroundColor: _hasMessageDraft
+                      ? scheme.primary
+                      : scheme.surfaceContainerHighest,
+                  foregroundColor: _hasMessageDraft
+                      ? scheme.onPrimary
+                      : scheme.onSurface.withValues(alpha: .38),
+                ),
+                icon: const Icon(Icons.arrow_upward_rounded),
               ),
-              const SizedBox(width: AppSpacing.xs),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
